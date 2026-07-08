@@ -3,7 +3,13 @@ import { auth } from "@/lib/auth";
 import { logoutUser } from "@/lib/actions";
 
 export async function Header() {
-  const session = await auth();
+  let session = null;
+
+  try {
+    session = await auth();
+  } catch {
+    session = null;
+  }
 
   return (
     <header className="border-b border-zinc-200 bg-white">

@@ -1,5 +1,6 @@
 import { VacancyCard } from "@/components/VacancyCard";
 import { CatalogFilters } from "@/components/CatalogFilters";
+import { fallbackVacancies } from "@/lib/catalog-fallback";
 import { GradeLevel } from "@/generated/prisma/enums";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -53,10 +54,12 @@ export default async function VacanciesPage({
       : {}),
   };
 
-  const vacancies = await prisma.vacancy.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-  });
+  const vacancies = await prisma.vacancy
+    .findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+    })
+    .catch(() => fallbackVacancies.filter((vacancy) => vacancy.published));
 
   const rank = (value: GradeLevel | null | undefined) => {
     if (!value) return 999;
@@ -71,10 +74,18 @@ export default async function VacanciesPage({
     return b.createdAt.getTime() - a.createdAt.getTime();
   });
 
-  const filterOptions = await prisma.vacancy.findMany({
-    where: { published: true },
-    select: { country: true, location: true, area: true },
-  });
+  const filterOptions = await prisma.vacancy
+    .findMany({
+      where: { published: true },
+      select: { country: true, location: true, area: true },
+    })
+    .catch(() =>
+      fallbackVacancies.map((vacancy) => ({
+        country: vacancy.country,
+        location: vacancy.location,
+        area: vacancy.area,
+      })),
+    );
 
   const countries = Array.from(new Set(filterOptions.map((item) => item.country).filter(Boolean) as string[])).sort();
   const cities = Array.from(new Set(filterOptions.map((item) => item.location).filter(Boolean) as string[])).sort();
