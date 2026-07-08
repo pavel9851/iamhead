@@ -23,6 +23,7 @@ export default async function ResumesPage({
     city?: string;
     grade?: string;
     area?: string;
+    sort?: string;
   }>;
 }) {
   const params = (await searchParams) ?? {};
@@ -31,6 +32,7 @@ export default async function ResumesPage({
   const city = params.city?.trim();
   const grade = params.grade?.trim();
   const area = params.area?.trim();
+  const sort = params.sort?.trim() || "newest";
 
   const where: Prisma.ResumeWhereInput = {
     published: true,
@@ -57,6 +59,19 @@ export default async function ResumesPage({
     orderBy: { createdAt: "desc" },
   });
 
+  const rank = (value: GradeLevel | null | undefined) => {
+    if (!value) return 999;
+    return gradeOrder.indexOf(value) === -1 ? 999 : gradeOrder.indexOf(value);
+  };
+
+  const sortList = [...resumes].sort((a, b) => {
+    if (sort === "oldest") return a.createdAt.getTime() - b.createdAt.getTime();
+    if (sort === "country") return (a.country ?? "").localeCompare(b.country ?? "", "ru");
+    if (sort === "city") return (a.location ?? "").localeCompare(b.location ?? "", "ru");
+    if (sort === "grade") return rank(a.grade) - rank(b.grade);
+    return b.createdAt.getTime() - a.createdAt.getTime();
+  });
+
   const filterOptions = await prisma.resume.findMany({
     where: { published: true },
     select: { country: true, location: true, area: true },
@@ -81,16 +96,17 @@ export default async function ResumesPage({
         city={city}
         grade={grade}
         area={area}
+        sort={sort}
         countries={countries}
         cities={cities}
         areas={areas}
       />
 
-      {resumes.length === 0 ? (
+      {sortList.length === 0 ? (
         <p className="mt-12 text-center text-zinc-500">По этим фильтрам резюме не найдено</p>
       ) : (
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {resumes.map((resume) => (
+          {sortList.map((resume) => (
             <ResumeCard key={resume.id} {...resume} />
           ))}
         </div>

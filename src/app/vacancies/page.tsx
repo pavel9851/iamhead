@@ -23,6 +23,7 @@ export default async function VacanciesPage({
     city?: string;
     grade?: string;
     area?: string;
+    sort?: string;
   }>;
 }) {
   const params = (await searchParams) ?? {};
@@ -31,6 +32,7 @@ export default async function VacanciesPage({
   const city = params.city?.trim();
   const grade = params.grade?.trim();
   const area = params.area?.trim();
+  const sort = params.sort?.trim() || "newest";
 
   const where: Prisma.VacancyWhereInput = {
     published: true,
@@ -54,6 +56,19 @@ export default async function VacanciesPage({
   const vacancies = await prisma.vacancy.findMany({
     where,
     orderBy: { createdAt: "desc" },
+  });
+
+  const rank = (value: GradeLevel | null | undefined) => {
+    if (!value) return 999;
+    return gradeOrder.indexOf(value) === -1 ? 999 : gradeOrder.indexOf(value);
+  };
+
+  const sortList = [...vacancies].sort((a, b) => {
+    if (sort === "oldest") return a.createdAt.getTime() - b.createdAt.getTime();
+    if (sort === "country") return (a.country ?? "").localeCompare(b.country ?? "", "ru");
+    if (sort === "city") return (a.location ?? "").localeCompare(b.location ?? "", "ru");
+    if (sort === "grade") return rank(a.grade) - rank(b.grade);
+    return b.createdAt.getTime() - a.createdAt.getTime();
   });
 
   const filterOptions = await prisma.vacancy.findMany({
@@ -84,16 +99,17 @@ export default async function VacanciesPage({
         city={city}
         grade={grade}
         area={area}
+        sort={sort}
         countries={countries}
         cities={cities}
         areas={areas}
       />
 
-      {vacancies.length === 0 ? (
+      {sortList.length === 0 ? (
         <p className="mt-12 text-center text-zinc-500">По этим фильтрам вакансий не найдено</p>
       ) : (
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {vacancies.map((vacancy) => (
+          {sortList.map((vacancy) => (
             <VacancyCard key={vacancy.id} {...vacancy} />
           ))}
         </div>
