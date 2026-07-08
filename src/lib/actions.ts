@@ -1,10 +1,14 @@
 "use server";
 
-import { GradeLevel, UserRole } from "@/generated/prisma/client";
+import { GradeLevel, UserRole } from "@/generated/prisma/enums";
 import { auth, signIn, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+
+export type AuthActionState = {
+  error: string | null;
+};
 
 function parseGrade(value: FormDataEntryValue | null) {
   if (typeof value !== "string") return null;
@@ -13,16 +17,19 @@ function parseGrade(value: FormDataEntryValue | null) {
     : null;
 }
 
-export async function registerUser(formData: FormData) {
+export async function registerUser(
+  _state: AuthActionState | void,
+  formData: FormData,
+): Promise<AuthActionState | void> {
   const email = formData.get("email") as string;
   const role = formData.get("role") as UserRole;
 
   if (!email || !role) {
-    throw new Error("Заполните все поля");
+    return { error: "Заполните все поля" };
   }
 
   if (role !== "RECRUITER" && role !== "CANDIDATE") {
-    throw new Error("Неверная роль");
+    return { error: "Неверная роль" };
   }
 
   await prisma.user.upsert({
@@ -34,16 +41,19 @@ export async function registerUser(formData: FormData) {
   await signIn("email", { email, redirectTo: "/dashboard" });
 }
 
-export async function loginUser(formData: FormData) {
+export async function loginUser(
+  _state: AuthActionState | void,
+  formData: FormData,
+): Promise<AuthActionState | void> {
   const email = formData.get("email") as string;
 
   if (!email) {
-    throw new Error("Введите email");
+    return { error: "Введите email" };
   }
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
-    throw new Error("Пользователь не найден. Сначала зарегистрируйтесь.");
+    return { error: "Пользователь не найден. Сначала зарегистрируйтесь." };
   }
 
   await signIn("email", { email, redirectTo: "/dashboard" });
