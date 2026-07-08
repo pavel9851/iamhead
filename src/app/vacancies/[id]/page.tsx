@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { fallbackVacancies } from "@/lib/catalog-fallback";
 import { prisma } from "@/lib/prisma";
 
 export default async function VacancyPage({
@@ -8,10 +9,12 @@ export default async function VacancyPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const vacancy = await prisma.vacancy.findUnique({
-    where: { id, published: true },
-    include: { recruiter: { select: { name: true, email: true } } },
-  });
+  const vacancy = await prisma.vacancy
+    .findUnique({
+      where: { id, published: true },
+      include: { recruiter: { select: { name: true, email: true } } },
+    })
+    .catch(() => fallbackVacancies.find((item) => item.id === id && item.published) ?? null);
 
   if (!vacancy) notFound();
 

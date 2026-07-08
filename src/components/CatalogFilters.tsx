@@ -10,6 +10,7 @@ interface CatalogFiltersProps {
   city?: FilterValue;
   grade?: FilterValue;
   area?: FilterValue;
+  sort?: FilterValue;
   countries: string[];
   cities: string[];
   areas: string[];
@@ -26,6 +27,14 @@ const gradeOptions = [
   { value: GradeLevel.JUNIOR, label: "Junior" },
 ];
 
+const sortOptions = [
+  { value: "newest", label: "Сначала новые" },
+  { value: "oldest", label: "Сначала старые" },
+  { value: "country", label: "По стране" },
+  { value: "city", label: "По городу" },
+  { value: "grade", label: "По грейду" },
+];
+
 function optionList(items: string[], placeholder: string) {
   return [
     { value: "", label: placeholder },
@@ -40,6 +49,7 @@ export function CatalogFilters({
   city,
   grade,
   area,
+  sort,
   countries,
   cities,
   areas,
@@ -126,6 +136,24 @@ export function CatalogFilters({
           >
             {optionList(areas, "Все области").map((option) => (
               <option key={option.value || "all-area"} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="md:col-span-2">
+          <label htmlFor="sort" className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-500">
+            Сортировка
+          </label>
+          <select
+            id="sort"
+            name="sort"
+            defaultValue={sort ?? "newest"}
+            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          >
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { fallbackResumes } from "@/lib/catalog-fallback";
 import { prisma } from "@/lib/prisma";
 
 export default async function ResumePage({
@@ -8,10 +9,12 @@ export default async function ResumePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const resume = await prisma.resume.findUnique({
-    where: { id, published: true },
-    include: { candidate: { select: { name: true, email: true } } },
-  });
+  const resume = await prisma.resume
+    .findUnique({
+      where: { id, published: true },
+      include: { candidate: { select: { name: true, email: true } } },
+    })
+    .catch(() => fallbackResumes.find((item) => item.id === id && item.published) ?? null);
 
   if (!resume) notFound();
 
